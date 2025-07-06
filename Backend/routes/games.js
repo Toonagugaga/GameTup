@@ -1,28 +1,17 @@
 // routes/games.js
 const express = require('express')
-const { body, validationResult } = require('express-validator')
-const Game = require('../models/User') // ใช้ Game model จาก User.js
-const { auth, adminAuth, optionalAuth } = require('../middleware/auth')
+const Game = require('../models/Game')
+const { auth, adminAuth } = require('../middleware/auth')
 
 const router = express.Router()
 
-// Get all games (public)
-router.get('/', optionalAuth, async (req, res) => {
+// ดูรายการเกมทั้งหมด (สำหรับลูกค้า)
+router.get('/', async (req, res) => {
     try {
+        const { category, search } = req.query
         const query = { isActive: true }
-        const { category, featured, search } = req.query
 
-        // Filter by category
-        if (category) {
-            query.category = category
-        }
-
-        // Filter by featured
-        if (featured === 'true') {
-            query.isFeatured = true
-        }
-
-        // Search functionality
+        if (category) query.category = category
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
@@ -30,169 +19,66 @@ router.get('/', optionalAuth, async (req, res) => {
             ]
         }
 
-        const games = await Game.find(query)
-            .sort({ sortOrder: 1, createdAt: -1 })
-            .select('-__v')
-
-        res.json({
-            success: true,
-            games
-        })
+        const games = await Game.find(query).sort({ isFeatured: -1, createdAt: -1 })
+        res.json({ games })
     } catch (error) {
-        console.error('Get games error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
+        res.status(500).json({ message: 'เกิดข้อผิดพลาด' })
     }
 })
 
-// Get single game by ID
+// ดูรายละเอียดเกม
 router.get('/:id', async (req, res) => {
     try {
         const game = await Game.findById(req.params.id)
-
-        if (!game) {
-            return res.status(404).json({
-                success: false,
-                message: 'Game not found'
-            })
+        if (!game || !game.isActive) {
+            return res.status(404).json({ message: 'ไม่พบเกมนี้' })
         }
-
-        if (!game.isActive) {
-            return res.status(404).json({
-                success: false,
-                message: 'Game is not available'
-            })
-        }
-
-        res.json({
-            success: true,
-            game
-        })
+        res.json({ game })
     } catch (error) {
-        console.error('Get game error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
-    }
-})
-
-// Get game categories
-router.get('/categories/list', async (req, res) => {
-    try {
-        const categories = await Game.distinct('category', { isActive: true })
-        res.json({
-            success: true,
-            categories
-        })
-    } catch (error) {
-        console.error('Get categories error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
-    }
-})
-
-// Create new game (Admin only)
-router.post('/', adminAuth, [
-    body('name').notEmpty().withMessage('Game name is required'),
-    body('displayName').notEmpty().withMessage('Display name is required'),
-    body('category').isIn(['moba', 'fps', 'mmorpg', 'mobile', 'other']).withMessage('Invalid category'),
-    body('image').notEmpty().withMessage('Game image is required')
-], async (req, res) => {
-    try {
-        const errors = validationResult(req)
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation errors',
-                errors: errors.array()
-            })
-        }
-
-        const gameData = req.body
-        const game = new Game(gameData)
-        await game.save()
-
-        res.status(201).json({
-            success: true,
-            message: 'Game created successfully',
-            game
-        })
-    } catch (error) {
-        if (error.code === 11000) {
-            return res.status(400).json({
-                success: false,
-                message: 'Game name already exists'
-            })
-        }
-        console.error('Create game error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
-    }
-})
-
-// Update game (Admin only)
-router.put('/:id', adminAuth, async (req, res) => {
-    try {
-        const game = await Game.findById(req.params.id)
-
-        if (!game) {
-            return res.status(404).json({
-                success: false,
-                message: 'Game not found'
-            })
-        }
-
-        Object.assign(game, req.body)
-        await game.save()
-
-        res.json({
-            success: true,
-            message: 'Game updated successfully',
-            game
-        })
-    } catch (error) {
-        console.error('Update game error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
-    }
-})
-
-// Delete game (Admin only)
-router.delete('/:id', adminAuth, async (req, res) => {
-    try {
-        const game = await Game.findById(req.params.id)
-
-        if (!game) {
-            return res.status(404).json({
-                success: false,
-                message: 'Game not found'
-            })
-        }
-
-        // Soft delete - just set isActive to false
-        game.isActive = false
-        await game.save()
-
-        res.json({
-            success: true,
-            message: 'Game deleted successfully'
-        })
-    } catch (error) {
-        console.error('Delete game error:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        })
+        res.status(500).json({ message: 'เกิดข้อผิดพลาด' })
     }
 })
 
 module.exports = router
+
+// ตัวอย่างการเพิ่มเกม VALORANT
+const addValorantGame = async () => {
+    const valorant = new Game({
+        name: 'valorant',
+        displayName: 'VALORANT',
+        description: 'เกมยิงแบบ 5v5 ที่ผสมผสานระหว่างการใช้ยุทธวิธีและความสามารถพิเศษ',
+        category: 'fps',
+        image: '/images/valorant.jpg',
+
+        topupFields: [
+            {
+                name: 'gameId',
+                label: 'Riot ID',
+                type: 'text',
+                placeholder: 'ตัวอย่าง: PlayerName#1234',
+                required: true
+            },
+            {
+                name: 'server',
+                label: 'Server',
+                type: 'select',
+                options: ['Asia Pacific', 'North America', 'Europe', 'Korea'],
+                required: true
+            }
+        ],
+
+        packages: [
+            { name: '125 VP', amount: 125, price: 50, isPopular: false },
+            { name: '420 VP', amount: 420, price: 150, isPopular: true },
+            { name: '700 VP', amount: 700, price: 250, isPopular: false },
+            { name: '1375 VP', amount: 1375, price: 500, isPopular: false },
+            { name: '2400 VP', amount: 2400, price: 850, isPopular: false },
+            { name: '4000 VP', amount: 4000, price: 1400, isPopular: false }
+        ],
+
+        isActive: true,
+        isFeatured: true
+    })
+
+    await valorant.save()
+}

@@ -5,96 +5,24 @@ const User = require('../models/User')
 const auth = async (req, res, next) => {
     try {
         const token = req.header('Authorization')
-
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'No token provided, authorization denied'
-            })
+            return res.status(401).json({ message: 'ไม่มี Token' })
         }
 
-        // Remove 'Bearer ' prefix if present
         const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
+        const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET)
 
-        // Verify token
-        const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET || 'your-secret-key')
-
-        // Check if user still exists
         const user = await User.findById(decoded.userId).select('-password')
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'User not found, authorization denied'
-            })
-        }
-
-        // Check if user is active
-        if (!user.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: 'Account is deactivated'
-            })
+        if (!user || !user.isActive) {
+            return res.status(401).json({ message: 'ผู้ใช้ไม่พบหรือถูกระงับ' })
         }
 
         req.user = decoded
         req.userInfo = user
         next()
     } catch (error) {
-        console.error('Auth middleware error:', error)
-        res.status(401).json({
-            success: false,
-            message: 'Invalid token, authorization denied'
-        })
+        res.status(401).json({ message: 'Token ไม่ถูกต้อง' })
     }
 }
 
-// Admin middleware
-const adminAuth = async (req, res, next) => {
-    try {
-        // First check if user is authenticated
-        await auth(req, res, () => { })
-
-        // Then check if user is admin
-        if (req.userInfo.role !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied. Admin privileges required'
-            })
-        }
-
-        next()
-    } catch (error) {
-        console.error('Admin auth middleware error:', error)
-        res.status(401).json({
-            success: false,
-            message: 'Authentication failed'
-        })
-    }
-}
-
-// Optional auth middleware (doesn't fail if no token)
-const optionalAuth = async (req, res, next) => {
-    try {
-        const token = req.header('Authorization')
-
-        if (!token) {
-            return next()
-        }
-
-        const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
-        const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET || 'your-secret-key')
-
-        const user = await User.findById(decoded.userId).select('-password')
-        if (user && user.isActive) {
-            req.user = decoded
-            req.userInfo = user
-        }
-
-        next()
-    } catch (error) {
-        // If token is invalid, continue without auth
-        next()
-    }
-}
-
-module.exports = { auth, adminAuth, optionalAuth }
+module.exports = { auth }
