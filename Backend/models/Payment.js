@@ -1,40 +1,71 @@
-// models/Payment.js
-const mongoose = require('mongoose')
+// models/Payment.js - ปรับปรุงสำหรับ Sequelize + PostgreSQL
+const { DataTypes } = require('sequelize')
+const sequelize = require('../config/database')
 
-const paymentSchema = new mongoose.Schema({
-    order: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
-        required: true
+const Payment = sequelize.define('Payment', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+    orderId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'Orders',
+            key: 'id'
+        }
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'Users',
+            key: 'id'
+        }
     },
     amount: {
-        type: Number,
-        required: true
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     method: {
-        type: String,
-        enum: ['credit_card', 'bank_transfer', 'wallet', 'promptpay'],
-        required: true
+        type: DataTypes.ENUM('credit_card', 'bank_transfer', 'truemoney', 'promptpay'),
+        allowNull: false
     },
     status: {
-        type: String,
-        enum: ['pending', 'success', 'failed', 'cancelled'],
-        default: 'pending'
+        type: DataTypes.ENUM('pending', 'success', 'failed', 'cancelled'),
+        defaultValue: 'pending'
     },
-    transactionId: String,
-    reference: String,
+    transactionId: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    reference: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     gatewayResponse: {
-        type: mongoose.Schema.Types.Mixed
+        type: DataTypes.JSONB,
+        allowNull: true
     },
-    processedAt: Date,
-    failureReason: String
+    processedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    failureReason: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    }
 }, {
-    timestamps: true
+    indexes: [
+        { fields: ['orderId'] },
+        { fields: ['userId'] },
+        { fields: ['status'] },
+        { fields: ['transactionId'] }
+    ]
 })
 
-module.exports = mongoose.model('Payment', paymentSchema)
+module.exports = Payment
