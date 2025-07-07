@@ -1,45 +1,115 @@
-// models/Order.js
-const orderSchema = new mongoose.Schema({
-    orderNumber: { type: String, required: true, unique: true },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    game: { type: mongoose.Schema.Types.ObjectId, ref: 'Game', required: true },
+// models/Order.js - ปรับปรุงสำหรับ PostgreSQL
+const { DataTypes } = require('sequelize')
+const sequelize = require('../config/database')
 
-    // ข้อมูลแพ็คเกจที่เลือก
-    package: {
-        name: String,
-        amount: Number,
-        price: Number
+const Order = sequelize.define('Order', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-
-    // ข้อมูลบัญชีเกมที่จะเติม
-    gameAccount: { type: Map, of: String }, // { gameId: "123", server: "Asia" }
-
+    orderNumber: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'Users',
+            key: 'id'
+        }
+    },
+    gameId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'Games',
+            key: 'id'
+        }
+    },
+    // ข้อมูลแพ็คเกจ
+    packageData: {
+        type: DataTypes.JSONB,
+        allowNull: false
+    },
+    // ข้อมูลบัญชีเกม
+    gameAccount: {
+        type: DataTypes.JSONB,
+        allowNull: false
+    },
     status: {
-        type: String,
-        enum: ['pending', 'processing', 'completed', 'failed', 'refunded'],
-        default: 'pending'
+        type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'),
+        defaultValue: 'pending'
     },
-
     paymentMethod: {
-        type: String,
-        enum: ['credit_card', 'bank_transfer', 'wallet', 'promptpay'],
-        required: true
+        type: DataTypes.ENUM('credit_card', 'bank_transfer', 'truemoney', 'promptpay'),
+        allowNull: false
     },
-
-    totalAmount: Number,
-    finalAmount: Number,
-
-    processedAt: Date,
-    completedAt: Date
-}, { timestamps: true })
-
-// สร้างเลขที่ออเดอร์อัตโนมัติ
-orderSchema.pre('save', async function (next) {
-    if (!this.orderNumber) {
-        const count = await this.constructor.countDocuments()
-        this.orderNumber = `GT${Date.now()}${String(count + 1).padStart(4, '0')}`
+    totalAmount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    },
+    discountAmount: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0.00,
+        validate: {
+            min: 0
+        }
+    },
+    finalAmount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    },
+    promoCode: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    transactionId: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    paymentReference: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    processedAt: {
+        type: DataTypes.DATE
+    },
+    completedAt: {
+        type: DataTypes.DATE
+    },
+    failureReason: {
+        type: DataTypes.TEXT
+    },
+    notes: {
+        type: DataTypes.TEXT
     }
-    next()
+}, {
+    hooks: {
+        beforeCreate: async (order) => {
+            if (!order.orderNumber) {
+                const timestamp = Date.now()
+                const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+                order.orderNumber = `GT${timestamp}${random}`
+            }
+        }
+    },
+    indexes: [
+        { fields: ['orderNumber'] },
+        { fields: ['userId'] },
+        { fields: ['gameId'] },
+        { fields: ['status'] },
+        { fields: ['paymentMethod'] },
+        { fields: ['createdAt'] }
+    ]
 })
 
-module.exports = mongoose.model('Order', orderSchema)
+module.exports = Order
