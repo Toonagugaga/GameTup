@@ -28,7 +28,8 @@
         "crypto": "^1.0.1",
         "moment": "^2.29.4",
         "uuid": "^9.0.0",
-        "joi": "^17.9.2"
+        "joi": "^17.9.2",
+        "cookie-parser": "^1.4.6"
     },
     "devDependencies": {
         "nodemon": "^3.0.1",
