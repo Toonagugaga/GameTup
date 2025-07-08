@@ -278,7 +278,7 @@ const startServer = async () => {
             console.log(`
 🚀 Server is running on port ${PORT}
 📊 Environment: ${process.env.NODE_ENV || 'development'}
-🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}
+🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}
 💾 Database: Connected
 🔒 Security: Enabled
 ⚡ Rate Limiting: Enabled
