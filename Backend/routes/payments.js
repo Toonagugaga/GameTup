@@ -1,7 +1,7 @@
 // routes/payments.js
 const express = require('express')
 const Order = require('../models/Order')
-const GameService = require('../services/gameService')
+const GameService = require('../service/gameService')
 const { auth } = require('../middleware/auth')
 
 const router = express.Router()
