@@ -1,0 +1,30 @@
+{
+    "development": {
+        "username": "your_username",
+        "password": "your_password",
+        "database": "your_database_name",
+        "host": "127.0.0.1",
+        "port": 3000,
+        "dialect": "postgres",
+        "logging": false
+    },
+    "test": {
+        "username": "your_username",
+        "password": "your_password",
+        "database": "your_database_name_test",
+        "host": "127.0.0.1",
+        "port": 3000,
+        "dialect": "postgres",
+        "logging": false
+    },
+    "production": {
+        "use_env_variable": "DATABASE_URL",
+        "dialect": "postgres",
+        "dialectOptions": {
+            "ssl": {
+                "require": true,
+                "rejectUnauthorized": false
+            }
+        }
+    }
+}

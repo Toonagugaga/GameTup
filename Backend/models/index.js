@@ -1,11 +1,17 @@
-// models/index.js - ตั้งค่าความสัมพันธ์
-const User = require('./User')
-const Game = require('./Game')
-const Order = require('./Order')
-const PromoCode = require('./PromoCode')
-const PromoCodeUsage = require('./PromoCodeUsage')
+// models/index.js
+const { Sequelize } = require('sequelize')
+const config = require('../config/database.json')[process.env.NODE_ENV || 'development']
 
-// ความสัมพันธ์
+const sequelize = new Sequelize(config)
+
+// Import models
+const User = require('./User')(sequelize, Sequelize)
+const Game = require('./Game')(sequelize, Sequelize)
+const Order = require('./Order')(sequelize, Sequelize)
+const PromoCode = require('./PromoCode')(sequelize, Sequelize)
+const PromoCodeUsage = require('./PromoCodeUsage')(sequelize, Sequelize)
+
+// Define associations
 User.hasMany(Order, { foreignKey: 'userId' })
 Order.belongsTo(User, { foreignKey: 'userId' })
 
@@ -21,10 +27,14 @@ PromoCodeUsage.belongsTo(User, { foreignKey: 'userId' })
 Order.hasMany(PromoCodeUsage, { foreignKey: 'orderId' })
 PromoCodeUsage.belongsTo(Order, { foreignKey: 'orderId' })
 
-module.exports = {
+const db = {
+    sequelize,
+    Sequelize,
     User,
     Game,
     Order,
     PromoCode,
     PromoCodeUsage
 }
+
+module.exports = db
