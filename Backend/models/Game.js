@@ -1,4 +1,4 @@
-// models/Game.js - ปรับปรุงสำหรับ PostgreSQL
+// models/Game.js - ปรับปรุงให้ตรงกับ migration
 const { DataTypes } = require('sequelize')
 const sequelize = require('../config/database')
 
@@ -24,49 +24,56 @@ const Game = sequelize.define('Game', {
         }
     },
     description: {
-        type: DataTypes.TEXT
+        type: DataTypes.TEXT,
+        allowNull: true
     },
     category: {
-        type: DataTypes.ENUM('moba', 'fps', 'mmorpg', 'mobile', 'battle-royale', 'strategy', 'other'),
+        type: DataTypes.STRING,
         allowNull: false
     },
     image: {
         type: DataTypes.STRING,
+        allowNull: true,
         validate: {
-            isUrl: true
+            isUrl: {
+                msg: 'Image must be a valid URL'
+            }
         }
     },
-    // ช่องกรอกข้อมูลที่ต้องการ
-    topupFields: {
+    // ช่องกรอกข้อมูลที่ต้องการสำหรับการเติมเงิน
+    accountFields: {
         type: DataTypes.JSONB,
         allowNull: false,
-        defaultValue: []
+        defaultValue: [],
+        comment: 'Fields required for game account (e.g., Player ID, Username)'
     },
-    // แพ็คเกจเติมเงิน
+    // แพ็คเกจเติมเงิน - ใช้เพื่อ compatibility กับโค้ดเดิม
     packages: {
         type: DataTypes.JSONB,
         allowNull: false,
-        defaultValue: []
+        defaultValue: [],
+        comment: 'Legacy packages field - use GamePackage table instead'
+    },
+    // คำแนะนำการใช้งาน
+    instructions: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'Instructions for users on how to find their game account info'
     },
     isActive: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: true
     },
     isFeatured: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: false
-    },
-    minTopup: {
-        type: DataTypes.DECIMAL(10, 2),
-        defaultValue: 10.00
-    },
-    maxTopup: {
-        type: DataTypes.DECIMAL(10, 2),
-        defaultValue: 10000.00
     }
 }, {
+    tableName: 'Games',
     indexes: [
-        { fields: ['name'] },
+        { fields: ['name'], unique: true },
         { fields: ['category'] },
         { fields: ['isActive'] },
         { fields: ['isFeatured'] }

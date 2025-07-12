@@ -50,10 +50,64 @@ module.exports = {
                 allowNull: false,
                 defaultValue: 0
             },
-            maxDiscount: {
+            maxAmount: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: true
+            },
+            fee: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0
+            },
+            feeType: {
+                type: Sequelize.ENUM('fixed', 'percentage'),
+                allowNull: false,
+                defaultValue: 'fixed'
+            },
+            config: {
+                type: Sequelize.JSONB,
+                allowNull: false,
+                defaultValue: {}
+            },
+            apiConfig: {
+                type: Sequelize.JSONB,
+                allowNull: false,
+                defaultValue: {}
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
             }
         })
+
+        // เพิ่ม indexes
+        await queryInterface.addIndex('PaymentMethods', ['name'], {
+            unique: true,
+            name: 'payment_methods_name_unique'
+        })
+
+        await queryInterface.addIndex('PaymentMethods', ['type'], {
+            name: 'payment_methods_type_index'
+        })
+
+        await queryInterface.addIndex('PaymentMethods', ['provider'], {
+            name: 'payment_methods_provider_index'
+        })
+
+        await queryInterface.addIndex('PaymentMethods', ['isActive'], {
+            name: 'payment_methods_is_active_index'
+        })
+
+        await queryInterface.addIndex('PaymentMethods', ['sortOrder'], {
+            name: 'payment_methods_sort_order_index'
+        })
+    },
+
+    async down(queryInterface, Sequelize) {
+        await queryInterface.dropTable('PaymentMethods')
     }
 }
