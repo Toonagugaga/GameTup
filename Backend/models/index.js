@@ -1,40 +1,58 @@
-// models/index.js
+// models/index.js - ปรับปรุงเพื่อให้ใช้กับ Sequelize instances ที่ถูกต้อง
+const sequelize = require('../config/database')
 const { Sequelize } = require('sequelize')
-const config = require('../config/database.json')[process.env.NODE_ENV || 'development']
-
-const sequelize = new Sequelize(config)
-
 // Import models
-const User = require('./User')(sequelize, Sequelize)
-const Game = require('./Game')(sequelize, Sequelize)
-const Order = require('./Order')(sequelize, Sequelize)
-const PromoCode = require('./PromoCode')(sequelize, Sequelize)
-const PromoCodeUsage = require('./PromoCodeUsage')(sequelize, Sequelize)
+const User = require('./User')
+const Game = require('./Game')
+const GamePackage = require('./GamePackage')
+const Order = require('./Order')
+const Payment = require('./Payment')
+const PromoCode = require('./PromoCode')
+const UserPromoCode = require('./UserPromoCode')
+const PaymentMethod = require('./PaymentMethod')
 
 // Define associations
-User.hasMany(Order, { foreignKey: 'userId' })
-Order.belongsTo(User, { foreignKey: 'userId' })
+// User associations
+User.hasMany(Order, { foreignKey: 'userId', as: 'orders' })
+User.hasMany(UserPromoCode, { foreignKey: 'userId', as: 'promoUsages' })
+User.hasMany(Payment, { foreignKey: 'userId', as: 'payments' })
 
-Game.hasMany(Order, { foreignKey: 'gameId' })
-Order.belongsTo(Game, { foreignKey: 'gameId' })
+// Game associations
+Game.hasMany(GamePackage, { foreignKey: 'gameId', as: 'packages' })
+Game.hasMany(Order, { foreignKey: 'gameId', as: 'orders' })
 
-PromoCode.hasMany(PromoCodeUsage, { foreignKey: 'promoCodeId' })
-PromoCodeUsage.belongsTo(PromoCode, { foreignKey: 'promoCodeId' })
+// GamePackage associations
+GamePackage.belongsTo(Game, { foreignKey: 'gameId', as: 'game' })
 
-User.hasMany(PromoCodeUsage, { foreignKey: 'userId' })
-PromoCodeUsage.belongsTo(User, { foreignKey: 'userId' })
+// Order associations
+Order.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+Order.belongsTo(Game, { foreignKey: 'gameId', as: 'game' })
+Order.hasMany(Payment, { foreignKey: 'orderId', as: 'payments' })
+Order.hasMany(UserPromoCode, { foreignKey: 'orderId', as: 'promoUsages' })
 
-Order.hasMany(PromoCodeUsage, { foreignKey: 'orderId' })
-PromoCodeUsage.belongsTo(Order, { foreignKey: 'orderId' })
+// Payment associations
+Payment.belongsTo(Order, { foreignKey: 'orderId', as: 'order' })
+Payment.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+
+// PromoCode associations
+PromoCode.hasMany(UserPromoCode, { foreignKey: 'promoCodeId', as: 'usages' })
+
+// UserPromoCode associations
+UserPromoCode.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+UserPromoCode.belongsTo(PromoCode, { foreignKey: 'promoCodeId', as: 'promoCode' })
+UserPromoCode.belongsTo(Order, { foreignKey: 'orderId', as: 'order' })
 
 const db = {
     sequelize,
     Sequelize,
     User,
     Game,
+    GamePackage,
     Order,
+    Payment,
     PromoCode,
-    PromoCodeUsage
+    UserPromoCode,
+    PaymentMethod
 }
 
 module.exports = db
