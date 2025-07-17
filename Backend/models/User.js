@@ -7,7 +7,8 @@ const User = sequelize.define('User', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
-        primaryKey: true
+        primaryKey: true,
+        allowNull: false // เพิ่มบรรทัดนี้
     },
     username: {
         type: DataTypes.STRING,
